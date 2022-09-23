@@ -1,0 +1,87 @@
+# This is the traditional YAML spec from the Azure Portal with some additions (see comments)
+# NOTE: Before deploying to a production environment, please review the documentation -> https://aka.ms/self-hosted-gateway-production
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apim-gateway-configmap
+data:
+  config.service.endpoint: "apim-sandbox-cloud-native.configuration.azure-api.net"
+  runtime.deployment.artifact.source: "Azure Portal"
+  runtime.deployment.mechanism: "YAML"
+  runtime.deployment.orchestrator.type: "Kubernetes"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apim-gateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: apim-gateway
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 25%
+  template:
+    metadata:
+      labels:
+        app: apim-gateway
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: apim-gateway
+        image: mcr.microsoft.com/azure-api-management/gateway:2.1.4
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: https
+          containerPort: 8081
+          # New container port used for rate limiting to discover instances
+        - containerPort: 4290
+          name: rate-limit-dc
+          protocol: UDP
+          # New container port used for instances to send heartbeats to each other
+        - containerPort: 4291
+          name: dc-heartbeat
+          protocol: UDP
+        readinessProbe:
+          httpGet:
+            path: /status-0123456789abcdef
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        env:
+        - name: config.service.auth
+          valueFrom:
+            secretKeyRef:
+              name: apim-gateway-token
+              key: value
+        # New environment variable to enable rate limiting discovery
+        - name: neighborhood.host
+          value: apim-shgw-discovery
+        envFrom:
+        - configMapRef:
+            name: apim-gateway-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apim-gateway
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  - name: https
+    port: 443
+    targetPort: 8081
+  selector:
+    app: apim-gateway
