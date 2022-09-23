@@ -6,15 +6,21 @@ A sample on how to run multiple instances of Azure API Management's self-hosted 
 
 You can easily configure synchronization of rate limiting across multiple instances of the self-hosted gateway:
 
-1. Change the Kubernetes Deployment so that it exposes additional ports:
+1. Get the Kubernetes YAML manifest from the Azure Portal as a starting point
+2. Create the Kubernetes secret to authenticate the self-hosted gateway with Azure API Management
+3. Change the Kubernetes Deployment so that it exposes additional ports:
   - Port 4290 (UDP) for the rate limiting synchronization
   - Port 4291 (UDP) for sending heartbeats to other instances
-2. Create a new headless Kubernetes Service for the self-hosted gateway which will be used to discover the gateway instances. (see `deployment/rate-limit-discovery.yaml`)
+4. Create a new headless Kubernetes Service for the self-hosted gateway which will be used to discover the gateway instances. (see `deployment/rate-limit-discovery.yaml`)
   - The Service should expose the same ports that were added in step 1)
-3. Introduce a new `neighborhood.host` environment variable on the Kubernetes Deployment that points to the headless Service created in step 2.
+5. Introduce a new `neighborhood.host` environment variable on the Kubernetes Deployment that points to the headless Service created in step 2.
   - The value should be the name of the headless Service, e.g. `rate-limit-discovery`
 
 Once everything is deployed, the self-hosted gateway instances will automatically discover each other and synchronize their rate limiting counters.
+
+*> ⚠️ Make sure that your Kubernetes Secret was created and correctly used by the Kubernetes Deployment*
+
+## Getting information about IP addresses per pod
 
 You can easily find the IP addresses of the self-hosted gateway instances by running the following command:
 
