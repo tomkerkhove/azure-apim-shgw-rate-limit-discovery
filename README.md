@@ -18,7 +18,7 @@ You can easily configure synchronization of rate limiting across multiple instan
 
 Once everything is deployed, the self-hosted gateway instances will automatically discover each other and synchronize their rate limiting counters.
 
-*> ⚠️ Make sure that your Kubernetes Secret was created and correctly used by the Kubernetes Deployment*
+> ⚠️ *Make sure that your Kubernetes Secret was created and correctly used by the Kubernetes Deployment*
 
 ## Getting information about IP addresses per pod
 
