@@ -1,0 +1,22 @@
+# New headless service to discover multiple instances in the same pod
+apiVersion: v1
+kind: Service
+metadata:
+  name: apim-shgw-discovery
+  annotations:
+    azure.apim.kubernetes.io/notes: "Headless service being used for instance discovery of SHGW"
+  labels:
+    app: apim-gateway
+spec:
+  clusterIP: None
+  selector:
+    app: apim-gateway
+  ports:
+    - protocol: UDP
+      port: 4290
+      targetPort: rate-limit-dc
+      name: rate-limit-discovery
+    - protocol: UDP
+      port: 4291
+      targetPort: dc-heartbeat
+      name: discovery-heartbeat 
